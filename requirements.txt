@@ -1,0 +1,10 @@
+fastapi
+uvicorn
+fastapi[standard]
+sqlalchemy
+python-dotenv
+psycopg2-binary
+user-agents
+redis
+pwdlib[argon2]
+pyjwt

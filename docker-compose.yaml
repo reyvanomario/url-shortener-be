@@ -1,0 +1,74 @@
+services:
+  url-shortener-app:
+    build: .
+    container_name: url-shortener-app
+    environment:
+      - DATABASE_URL=postgresql://url-shortener-dev:url-shortener-pass@url-shortener-db:5432/url-shortener-dev
+      - REDIS_HOST=url-shortener-redis
+      - REDIS_PORT=6379
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --proxy-headers --forwarded-allow-ips "*"
+    depends_on:
+      url-shortener-db:
+        condition: service_healthy
+      url-shortener-redis:
+        condition: service_healthy
+    networks:
+      - url_shortener_net
+  
+  url-shortener-nginx:
+    image: nginx:alpine
+    container_name: url-shortener-nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/nginx.conf:ro
+    depends_on:
+      - url-shortener-app
+    networks:
+      - url_shortener_net
+
+  url-shortener-db:
+    image: postgres:17.5-alpine
+    container_name: url-shortener-db
+    ports:
+      - '35004:5432'
+    restart: 'no'
+    environment:
+      - POSTGRES_USER=url-shortener-dev
+      - POSTGRES_PASSWORD=url-shortener-pass
+      - POSTGRES_DB=url-shortener-dev
+    volumes:
+      - url-shortener-db:/var/lib/postgresql/data
+    networks:
+      - url_shortener_net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U url-shortener-dev"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  url-shortener-redis:
+    image: redis:7-alpine
+    container_name: url-shortener-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - url-shortener-redis-data:/data
+    command: redis-server --appendonly yes 
+    networks:
+      - url_shortener_net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+networks:
+  url_shortener_net:
+    driver: bridge
+
+volumes:
+  url-shortener-db:
+    driver: local
+  url-shortener-redis-data:
+    driver: local
