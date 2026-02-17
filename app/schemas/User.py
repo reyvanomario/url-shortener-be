@@ -19,11 +19,14 @@ class UserBase(BaseModel):
 
 
 class UserCreate(UserBase):
-    password: SecretStr = Field(..., min_length=8, max_length=100, description="Password minimal 8 karakter")
+    password: SecretStr = Field(..., description="Password minimal 5 karakter")
     
     @field_validator('password')
     def validate_password(cls, v):
         password_str = v.get_secret_value()
+
+        if len(password_str) < 5:
+            raise ValueError('Password minimal 5 karakter')
 
         if not re.search(r'[a-z]', password_str):
             raise ValueError('Password harus mengandung huruf kecil')
