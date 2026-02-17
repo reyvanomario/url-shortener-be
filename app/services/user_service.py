@@ -16,7 +16,8 @@ def create_user(request: schemas.UserCreate, db: Session):
         if existing:
             raise DuplicateUsernameError()    
     
-    hashed_password = password_utils.hash_password(request.password)
+    plain_password = request.password.get_secret_value()
+    hashed_password = password_utils.hash_password(plain_password)
 
 
     new_user = models.User(
