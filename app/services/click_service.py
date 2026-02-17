@@ -21,8 +21,6 @@ async def track_click(short_url: str, db: Session, request):
         
     
     connection_ip = get_real_client_ip(request)
-        
-    print(f"User IP: {user_ip}, Connection IP: {connection_ip}")
     
     
     ua_string = request.headers.get("user-agent", "")

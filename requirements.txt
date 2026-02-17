@@ -8,3 +8,7 @@ user-agents
 redis
 pwdlib[argon2]
 pyjwt
+httpx
+user-agents
+alembic
+gunicorn

@@ -6,8 +6,7 @@ from fastapi import Depends
 from .config import settings
 
 
-
-engine = create_engine(settings.DATABASE_URL)
+engine = create_engine(settings.effective_database_url)
 
 SessionLocal = sessionmaker(bind=engine, autocommit=False, autoflush=False)
 

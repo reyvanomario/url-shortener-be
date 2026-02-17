@@ -1,19 +1,19 @@
+from typing import Optional
 from .. import schemas
 from .. import models
 from sqlalchemy.orm import Session
-from sqlalchemy import select
+from sqlalchemy import select, update
 from ..exceptions.url_exception import UrlNotFoundError, DuplicateShortUrlError
 from ..exceptions.user_exception import UserNotFoundError
 from ..core.redis import redis_client
 
 
-def shorten_url(request: schemas.UrlCreate, db: Session):
-    user = db.get(models.User, request.user_id)
-
-    if user is None:
-        raise UserNotFoundError()
+def shorten_url(request: schemas.UrlCreate, db: Session, user: Optional[schemas.UserBase] = None):
+    if user:
+        user_id = user.id
+    else:
+        user_id = None 
     
-
     if request.short_url:
         existing = db.scalar(
             select(models.Url).where(
@@ -23,7 +23,7 @@ def shorten_url(request: schemas.UrlCreate, db: Session):
         if existing:
             raise DuplicateShortUrlError
 
-    new_url = models.Url(full_url=request.full_url, short_url=request.short_url, user_id=request.user_id)
+    new_url = models.Url(full_url=request.full_url, short_url=request.short_url, user_id=user_id)
     db.add(new_url)
     db.commit()
     db.refresh(new_url)
@@ -38,11 +38,24 @@ def get_all_urls(db: Session):
 
     return urls
 
+def get_user_urls(user_id: int, db: Session):
+    urls = db.query(models.Url).filter(models.Url.user_id == user_id).all()
+
+    return urls
+
 
 async def get_url(short_url: str, db: Session):
     cached = await redis_client.get_cached_url(short_url)
+
     if cached:
-        print("return cache " + cached)
+        db.execute(
+            update(models.Url)
+            .where(models.Url.short_url == short_url)
+            .values(click=models.Url.click + 1)
+        )
+        db.commit()
+
+
         return cached
     
     statement = select(models.Url).where(models.Url.short_url == short_url)
@@ -55,45 +68,12 @@ async def get_url(short_url: str, db: Session):
     url.click += 1
     db.commit()
 
+
     await redis_client.cache_url(short_url, url.full_url)
 
     # langsung return full url
     return url.full_url
 
-
-async def update_url(id: int, request: schemas.UrlUpdate, db: Session):
-    url_db = db.get(models.Url, id)
-
-    if url_db is None:
-        raise UrlNotFoundError()
-    
-    old_short_url = url_db.short_url
-
-    update_data = request.model_dump(exclude_unset=True)
-
-    # Validasi short url baru tidak boleh sama
-    if 'short_url' in update_data:
-        existing = db.scalar(
-            select(models.Url).where(
-                models.Url.short_url == update_data['short_url'],
-                models.Url.id != id 
-            )
-        )
-        if existing:
-            raise DuplicateShortUrlError()
-
-    for field, value in update_data.items():
-        # (url, key yg diupdate, value)
-        setattr(url_db, field, value)
-
-    db.commit()
-    db.refresh(url_db)
-
-    await redis_client.invalidate_url(old_short_url)
-    if 'short_url' in update_data:
-        await redis_client.invalidate_url(url_db.short_url)
-
-    return url_db
 
 
 async def delete_url(id: int, db: Session):

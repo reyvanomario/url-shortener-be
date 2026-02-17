@@ -11,32 +11,24 @@ class RedisClient:
         self.client: Optional[redis.Redis] = None
     
     async def connect(self):
-        """Buat koneksi ke Redis"""
+        if not settings.REDIS_URL and settings.REDIS_HOST == "localhost":
+            return
+            
         try:
             self.client = await redis.from_url(
-                settings.REDIS_URL,
-                encoding="utf-8",
-                decode_responses=True,  # Auto-decode bytes ke string
-                health_check_interval=30  # Cek koneksi tiap 30 detik
+                settings.effective_redis_url,
+                decode_responses=True
             )
-            # Test koneksi
             await self.client.ping()
-            logger.info("Redis connected")
         except Exception as e:
-            logger.error(f"Redis connection failed: {e}")
-            # Fallback: tanpa Redis (app tetap jalan, tapi lambat)
             self.client = None
     
     async def close(self):
-        """Tutup koneksi Redis"""
         if self.client:
             await self.client.close()
-            logger.info("🔌 Redis disconnected")
-    
-    # ===== BASIC OPERATIONS =====
-    
+            logger.info("Redis disconnected")
+        
     async def get(self, key: str) -> Optional[str]:
-        """Get value by key"""
         if not self.client:
             return None
         try:
@@ -46,7 +38,6 @@ class RedisClient:
             return None
     
     async def set(self, key: str, value: str, ex: Optional[int] = None):
-        """Set key with optional expiry"""
         if not self.client:
             return None
         try:
@@ -55,11 +46,9 @@ class RedisClient:
             logger.error(f"Redis set error: {e}")
     
     async def setex(self, key: str, seconds: int, value: str):
-        """Set with expiry (alias untuk set dengan ex)"""
         await self.set(key, value, ex=seconds)
     
     async def delete(self, *keys: str) -> int:
-        """Delete one or more keys"""
         if not self.client:
             return 0
         try:
@@ -69,7 +58,6 @@ class RedisClient:
             return 0
     
     async def exists(self, key: str) -> bool:
-        """Check if key exists"""
         if not self.client:
             return False
         try:
@@ -79,7 +67,6 @@ class RedisClient:
             return False
     
     async def expire(self, key: str, seconds: int) -> bool:
-        """Set expiry on existing key"""
         if not self.client:
             return False
         try:
@@ -87,11 +74,8 @@ class RedisClient:
         except Exception as e:
             logger.error(f"Redis expire error: {e}")
             return False
-    
-    # ===== COUNTER OPERATIONS =====
-    
+        
     async def incr(self, key: str) -> Optional[int]:
-        """Increment counter"""
         if not self.client:
             return None
         try:
@@ -101,7 +85,6 @@ class RedisClient:
             return None
     
     async def decr(self, key: str) -> Optional[int]:
-        """Decrement counter"""
         if not self.client:
             return None
         try:
@@ -109,11 +92,8 @@ class RedisClient:
         except Exception as e:
             logger.error(f"Redis decr error: {e}")
             return None
-    
-    # ===== JSON OPERATIONS =====
-    
+        
     async def set_json(self, key: str, data: Any, ex: Optional[int] = None):
-        """Store Python object as JSON"""
         if not self.client:
             return None
         try:
@@ -123,7 +103,6 @@ class RedisClient:
             logger.error(f"Redis set_json error: {e}")
     
     async def get_json(self, key: str) -> Optional[Any]:
-        """Get and parse JSON data"""
         if not self.client:
             return None
         try:
@@ -132,34 +111,43 @@ class RedisClient:
         except Exception as e:
             logger.error(f"Redis get_json error: {e}")
             return None
-    
-    # ===== URL SHORTENER SPECIFIC =====
-    
-    async def cache_url(self, short_code: str, long_url: str):
-        """Cache URL untuk redirect cepat"""
-        await self.setex(
-            f"url:{short_code}", 
-            settings.REDIS_CACHE_TTL, 
-            long_url
+        
+    async def cache_url(self, short_url: str, full_url: str):
+        if not self.client:
+            return
+        await self.client.setex(
+            f"url:{short_url}",
+            settings.REDIS_CACHE_TTL,
+            full_url
         )
     
-    async def get_cached_url(self, short_code: str) -> Optional[str]:
-        """Dapatkan URL dari cache"""
-        return await self.get(f"url:{short_code}")
+    async def get_cached_url(self, short_url: str) -> Optional[str]:
+        if not self.client:
+            return None
+        return await self.client.get(f"url:{short_url}")
     
-    async def invalidate_url(self, short_code: str):
-        """Hapus URL dari cache (misal pas delete/update)"""
-        await self.delete(f"url:{short_code}")
+    async def invalidate_url(self, short_url: str):
+        if not self.client:
+            return
+        await self.client.delete(f"url:{short_url}")
     
-    async def increment_click(self, short_code: str):
-        key = f"clicks:{short_code}"
-        await self.incr(key)
-        await self.expire(key, 86400)
+    async def incr(self, key: str):
+        if not self.client:
+            return
+        await self.client.incr(key)
     
-    async def get_daily_clicks(self, short_code: str) -> int:
-        """Dapatkan jumlah clicks hari ini dari Redis"""
-        val = await self.get(f"clicks:{short_code}")
-        return int(val) if val else 0
+    async def expire(self, key: str, seconds: int):
+        if not self.client:
+            return
+        await self.client.expire(key, seconds)
+    
+    async def get(self, key: str) -> Optional[str]:
+        if not self.client:
+            return None
+        return await self.client.get(key)
+    
+    async def close(self):
+        if self.client:
+            await self.client.close()
 
-# Singleton instance
 redis_client = RedisClient()

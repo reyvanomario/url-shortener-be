@@ -1,8 +1,10 @@
 from pydantic import BaseModel
 
-class Token(BaseModel):
-    access_token: str
-    token_type: str
+class LoginJwtResponse(BaseModel):
+    id: int
+    username: str
+    token: str
+    tokenType: str
 
 
 class TokenData(BaseModel):

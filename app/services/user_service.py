@@ -14,8 +14,7 @@ def create_user(request: schemas.UserCreate, db: Session):
             )
         )
         if existing:
-            raise DuplicateUsernameError()
-        
+            raise DuplicateUsernameError()    
     
     hashed_password = password_utils.hash_password(request.password)
 
@@ -36,6 +35,20 @@ def get_user(id: int, db: Session):
     user = db.get(models.User, id)
 
     if user is None:
+        raise UserNotFoundError()
+    
+    return user
+
+
+def get_current_user(token_data: schemas.TokenData, db: Session):
+    user = get_user_by_username(token_data.username, db)
+    return user
+
+
+def get_user_by_username(username: str, db: Session):
+    user = db.query(models.User).filter(models.User.username == username).first()
+    
+    if not user:
         raise UserNotFoundError()
     
     return user
