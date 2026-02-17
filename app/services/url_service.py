@@ -21,7 +21,7 @@ def shorten_url(request: schemas.UrlCreate, db: Session, user: Optional[schemas.
             )
         )
         if existing:
-            raise DuplicateShortUrlError
+            raise DuplicateShortUrlError()
 
     new_url = models.Url(full_url=request.full_url, short_url=request.short_url, user_id=user_id)
     db.add(new_url)
