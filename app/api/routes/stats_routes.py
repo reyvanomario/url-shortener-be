@@ -81,7 +81,5 @@ async def get_url_dashboard(
             "full_url": url.full_url,
             "total_clicks": url.click,
             "daily_breakdown": daily_breakdown,
-            "top_countries": top_countries,
-            "top_referers": top_referers
         }
     )
