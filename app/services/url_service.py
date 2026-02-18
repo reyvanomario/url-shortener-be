@@ -4,7 +4,6 @@ from .. import models
 from sqlalchemy.orm import Session
 from sqlalchemy import select, update
 from ..exceptions.url_exception import UrlNotFoundError, DuplicateShortUrlError
-from ..exceptions.user_exception import UserNotFoundError
 from ..core.redis import redis_client
 
 
