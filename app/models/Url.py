@@ -12,7 +12,7 @@ class Url(Base):
     short_url: Mapped[str] = mapped_column(String(20), unique=True, nullable=False)
     click: Mapped[int] = mapped_column(default=0)
     user_id: Mapped[Optional[int]] = mapped_column(
-        ForeignKey("users.id", ondelete="SET NULL"),  # Ubah CASCADE jadi SET NULL
+        ForeignKey("users.id", ondelete="SET NULL"),
         nullable=True
     )
 

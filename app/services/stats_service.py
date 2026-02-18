@@ -1,4 +1,3 @@
-# app/services/stats_service.py
 from .. import models
 from sqlalchemy.orm import Session
 from sqlalchemy import select, func, and_
@@ -13,7 +12,6 @@ async def get_url_stats(short_url: str, db: Session):
     
     clicks = db.query(models.Click).filter(models.Click.short_url == short_url).all()
     
-    # Hitung statistik perangkat
     device_stats = {
         "desktop": 0,
         "mobile": 0,
