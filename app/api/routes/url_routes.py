@@ -75,32 +75,3 @@ def delete_url(id: int, db: SessionDep, current_user: Annotated[schemas.UserBase
     except UrlNotFoundError:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="URL not found")
     
-
-@router.get("/debug/ip")
-async def debug_ip(request: Request):
-    return {
-        "client_host": request.client.host if request.client else None,
-        "scope_client": request.scope.get("client"),
-        "headers": {
-            "x-real-ip": request.headers.get("x-real-ip"),
-            "x-forwarded-for": request.headers.get("x-forwarded-for"),
-        },
-        "user_ip": get_user_ip(request),
-        "connection_ip": get_real_client_ip(request)
-    }
-
-
-@router.get("/debug/ip/detailed")
-async def debug_ip_detailed(request: Request):
-    return {
-        "client_host": request.client.host,
-        "client_port": request.client.port,
-        "headers": dict(request.headers),
-        "method": request.method,
-        "url": str(request.url),
-        "server": {
-            "host": request.url.hostname,
-            "port": request.url.port,
-            "scheme": request.url.scheme
-        }
-    }
