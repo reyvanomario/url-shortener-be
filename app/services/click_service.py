@@ -44,7 +44,6 @@ async def track_click(short_url: str, db: Session, request):
         short_url=short_url,
         ip_address=user_ip,
         user_agent=ua_string,
-        referer=request.headers.get("referer", ""),
         country=country,
         device_type=device_type,
         browser=ua.browser.family,
@@ -70,25 +69,3 @@ async def _get_country(ip: str) -> str:
     except:
         pass
     return ""
-
-
-def _get_client_ip(request):
-    """
-    Dapatkan IP asli client dengan prioritas:
-    1. X-Real-IP (header dari Nginx)
-    2. X-Forwarded-For (header dari proxy)
-    3. request.client.host (langsung)
-    """
-    # Cek X-Real-IP dulu (ini yang paling reliable dari Nginx)
-    x_real_ip = request.headers.get("x-real-ip")
-    if x_real_ip:
-        return x_real_ip
-    
-    # Cek X-Forwarded-For
-    x_forwarded_for = request.headers.get("x-forwarded-for")
-    if x_forwarded_for:
-        # IP asli adalah yang paling kiri
-        return x_forwarded_for.split(",")[0].strip()
-    
-    # Fallback ke direct IP
-    return request.client.host

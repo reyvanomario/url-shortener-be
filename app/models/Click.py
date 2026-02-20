@@ -12,7 +12,6 @@ class Click(Base):
 
     ip_address: Mapped[str] = mapped_column(String(45))
     user_agent: Mapped[str] = mapped_column(Text)
-    referer: Mapped[str] = mapped_column(Text)
     country: Mapped[str] = mapped_column(String(2))
     device_type: Mapped[str] = mapped_column(String(20)) 
     browser: Mapped[str] = mapped_column(String(50))
