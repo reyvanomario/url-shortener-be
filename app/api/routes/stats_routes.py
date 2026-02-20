@@ -15,12 +15,9 @@ async def get_url_dashboard(
     short_url: str, 
     db: SessionDep, 
     current_user: Annotated[schemas.UserBase, Depends(oauth2.get_current_user)],
-    days: int = 90
 ):
     try:
         stats = await stats_service.get_url_stats(short_url, db)
-        
-        
         
         return BaseResponse(
             status=200,

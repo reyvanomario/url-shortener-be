@@ -58,8 +58,6 @@ async def get_my_urls(
     )
 
     
-
-
 @router.delete("/{id}")
 def delete_url(id: int, db: SessionDep, current_user: Annotated[schemas.UserBase, Depends(oauth2.get_current_user)]):
     try:
