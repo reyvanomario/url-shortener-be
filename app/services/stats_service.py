@@ -3,13 +3,18 @@ from sqlalchemy.orm import Session
 from sqlalchemy import select, func, and_
 from datetime import datetime, timedelta
 from ..exceptions.url_exception import UrlNotFoundError
+from ..exceptions.stats_exception import ForbiddenAccessException
 from collections import defaultdict
 
-async def get_url_stats(short_url: str, db: Session):
+
+async def get_url_stats(short_url: str, db: Session, current_user):
     url = db.query(models.Url).filter(models.Url.short_url == short_url).first()
     
     if not url:
         raise UrlNotFoundError(f"URL with short url '{short_url}' not found")
+    
+    if url.user_id != current_user.id:
+        raise ForbiddenAccessException()
     
     all_clicks = db.query(models.Click).filter(
         models.Click.short_url == short_url

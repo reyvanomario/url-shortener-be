@@ -7,6 +7,7 @@ from typing import Annotated
 from ...schemas.base_response import BaseResponse
 from ...services import stats_service
 from ...exceptions.url_exception import UrlNotFoundError
+from ...exceptions.stats_exception import ForbiddenAccessException
 
 router = APIRouter(prefix="/stats", tags=["Statistics"])
 
@@ -17,7 +18,7 @@ async def get_url_dashboard(
     current_user: Annotated[schemas.UserBase, Depends(oauth2.get_current_user)],
 ):
     try:
-        stats = await stats_service.get_url_stats(short_url, db)
+        stats = await stats_service.get_url_stats(short_url, db, current_user)
         
         return BaseResponse(
             status=200,
@@ -27,3 +28,7 @@ async def get_url_dashboard(
         )
     except UrlNotFoundError:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="URL not found")
+    
+    except ForbiddenAccessException:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You don't have permission to access this resource")
+

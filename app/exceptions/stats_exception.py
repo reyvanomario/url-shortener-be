@@ -1,0 +1,2 @@
+class ForbiddenAccessException(Exception):
+    pass
