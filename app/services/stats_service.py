@@ -18,7 +18,7 @@ async def get_url_stats(short_url: str, db: Session):
     total_clicks = len(all_clicks)
 
     recent_clicks = []
-    for click in all_clicks:
+    for click in all_clicks[:10]:
         recent_clicks.append({
             "ip": click.ip_address,
             "country": click.country,
